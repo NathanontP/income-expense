@@ -197,6 +197,7 @@ def view_report_ui():
 
             def export_pdf():
                 pdf_path = generate_pdf_from_csv(csv_path, report_file.replace(".csv", ""))
+                os.startfile(pdf_path)
                 view_win.destroy()
                 messagebox.showinfo("สำเร็จ", f"แปลงเป็น PDF สำเร็จแล้วบันทึกที่: {pdf_path}")
 
