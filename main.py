@@ -55,7 +55,7 @@ def input_data():
         elif type_choice == '2':
             type_ = "รายจ่าย"
         else:
-            print("❌ เลือกเฉพาะ 1, 2, back, done หรือ cancel เท่านั้น")
+            print("พิมพ์ '1' หรือ '2' เพื่อเลือกประเภท, 'back' เพื่อย้อนกลับ, 'done' เพื่อเสร็จสิ้น, 'cancel' เพื่อยกเลิกทั้งหมด")
             continue
 
         # กรอกหมวดหมู่
@@ -205,6 +205,125 @@ def generate_pdf_from_csv(csv_path, report_title):
     c.save()
     print(f"📄 สร้าง PDF แล้ว: {pdf_path}")
 
+def edit_report():
+    reports = [f for f in os.listdir(REPORT_DIR) if f.endswith(".csv")]
+    if not reports:
+        print("📭 ยังไม่มีรายงานให้แก้ไข")
+        return
+
+    print("\n📝 รายงานที่สามารถแก้ไขได้:")
+    for i, r in enumerate(reports, 1):
+        print(f"{i}) {r}")
+
+    choice = input("เลือกหมายเลขรายงานที่ต้องการแก้ไข หรือพิมพ์ 'back' เพื่อย้อนกลับ: ").strip()
+    if choice.lower() == "back":
+        return
+
+    try:
+        index = int(choice) - 1
+        if index < 0 or index >= len(reports):
+            print("❌ หมายเลขไม่ถูกต้อง")
+            return
+        report_file = reports[index]
+        csv_path = os.path.join(REPORT_DIR, report_file)
+
+        with open(csv_path, newline='', encoding='utf-8-sig') as f:
+            reader = list(csv.reader(f))
+
+        if len(reader) <= 1:
+            print("❌ ไม่มีข้อมูลให้แก้ไข")
+            return
+
+        while True:
+            print(f"\n📋 รายการใน {report_file}:")
+            for i, row in enumerate(reader):
+                if i == 0:
+                    print(f"{'No.':<4} | {row[0]:<10} | {row[1]:<15} | {row[2]:<20} | {row[3]}")
+                    print("-" * 80)
+                else:
+                    print(f"{i:<4} | {row[0]:<10} | {row[1]:<15} | {row[2]:<20} | {float(row[3]):,.2f}")
+
+            print("\n🛠️ ตัวเลือก:")
+            print("1) แก้ไขแถว")
+            print("2) ลบแถว")
+            print("3) เพิ่มแถวใหม่")
+            print("4) กลับเมนูหลัก")
+            action = input("เลือกหมายเลขการดำเนินการ: ").strip()
+
+            if action == '1':
+                row_choice = input("กรุณาเลือกหมายเลขแถวที่ต้องการ *แก้ไข* (ยกเว้นหัวตาราง): ").strip()
+                if not row_choice.isdigit():
+                    continue
+                row_index = int(row_choice)
+                if row_index <= 0 or row_index >= len(reader):
+                    print("❌ หมายเลขแถวไม่ถูกต้อง")
+                    continue
+
+                old_row = reader[row_index]
+                print(f"\n🔧 กำลังแก้ไข: {old_row}")
+
+                type_ = input(f"ประเภท (รายรับ/รายจ่าย) [{old_row[0]}]: ").strip() or old_row[0]
+                category = input(f"หมวดหมู่ [{old_row[1]}]: ").strip() or old_row[1]
+                detail = input(f"รายละเอียด [{old_row[2]}]: ").strip() or old_row[2]
+                amount_input = input(f"จำนวนเงิน [{old_row[3]}]: ").strip() or old_row[3]
+
+                try:
+                    amount = float(amount_input)
+                except ValueError:
+                    print("❌ จำนวนเงินต้องเป็นตัวเลข")
+                    continue
+
+                reader[row_index] = [type_, category, detail, amount]
+                print("✅ แก้ไขสำเร็จ")
+
+            elif action == '2':
+                row_choice = input("กรุณาเลือกหมายเลขแถวที่ต้องการ *ลบ* (ยกเว้นหัวตาราง): ").strip()
+                if not row_choice.isdigit():
+                    continue
+                row_index = int(row_choice)
+                if row_index <= 0 or row_index >= len(reader):
+                    print("❌ หมายเลขแถวไม่ถูกต้อง")
+                    continue
+
+                confirm = input(f"คุณแน่ใจหรือไม่ที่จะลบรายการนี้: {reader[row_index]} (yes/no): ").strip().lower()
+                if confirm == 'yes':
+                    removed = reader.pop(row_index)
+                    print(f"🗑️ ลบสำเร็จ: {removed}")
+                else:
+                    print("❎ ยกเลิกการลบ")
+
+            elif action == '3':
+                print("\n➕ เพิ่มรายการใหม่")
+                type_ = input("ประเภท (รายรับ/รายจ่าย): ").strip()
+                if type_ not in ["รายรับ", "รายจ่าย"]:
+                    print("❌ ประเภทไม่ถูกต้อง")
+                    continue
+                category = input("หมวดหมู่: ").strip()
+                detail = input("รายละเอียด: ").strip()
+                amount_input = input("จำนวนเงิน: ").strip()
+                try:
+                    amount = float(amount_input)
+                except ValueError:
+                    print("❌ จำนวนเงินไม่ถูกต้อง")
+                    continue
+
+                reader.append([type_, category, detail, amount])
+                print("✅ เพิ่มรายการสำเร็จ")
+
+            elif action == '4':
+                break
+            else:
+                print("❌ กรุณาเลือก 1-4 เท่านั้น")
+                continue
+
+            # เขียนกลับไฟล์ CSV ทุกครั้งที่มีการเปลี่ยนแปลง
+            with open(csv_path, 'w', newline='', encoding='utf-8-sig') as f:
+                writer = csv.writer(f)
+                writer.writerows(reader)
+
+    except Exception as e:
+        print("❌ ผิดพลาด:", e)
+
 
 # ===== เมนูหลัก =====
 def main():
@@ -212,7 +331,8 @@ def main():
         print("\n======= ระบบจัดการรายงานรายรับรายจ่าย =======")
         print("1) สร้างรายงานใหม่")
         print("2) ดูรายงานเดิม และแปลงเป็น PDF")
-        print("3) ออกจากโปรแกรม")
+        print("3) แก้ไขรายงาน CSV")
+        print("4) ออกจากโปรแกรม")
         choice = input("เลือกเมนู: ")
 
         if choice == '1':
@@ -220,6 +340,8 @@ def main():
         elif choice == '2':
             list_reports()
         elif choice == '3':
+            edit_report()
+        elif choice == '4':
             print("👋 ออกจากโปรแกรมแล้ว")
             break
         else:
