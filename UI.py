@@ -86,7 +86,7 @@ root.geometry("400x550")
 def create_report_ui():
     win = tk.Toplevel(root)
     win.title("สร้างรายงานใหม่")
-    win.geometry("500x550")
+    win.geometry("600x600")
 
     tk.Label(win, text="ชื่อรายงาน (ไม่ต้องใส่ .csv)", font=("TH Sarabun New", 16)).pack(pady=5)
     name_var = tk.StringVar()
@@ -94,23 +94,35 @@ def create_report_ui():
 
     data = []
 
-    # ปรับ Treeview ให้ฟอนต์ใหญ่
+    # ปรับ Treeview ให้ฟอนต์ใหญ่ + Scrollbar
     style = ttk.Style()
     style.configure("Treeview", font=("TH Sarabun New", 16), rowheight=28)
     style.configure("Treeview.Heading", font=("TH Sarabun New", 16, "bold"))
 
-    tree = ttk.Treeview(win, columns=("ประเภท", "หมวดหมู่", "รายละเอียด", "จำนวนเงิน"), show="headings")
+    tree_frame = tk.Frame(win)
+    tree_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+    tree_scroll = tk.Scrollbar(tree_frame)
+    tree_scroll.pack(side="right", fill="y")
+
+    tree = ttk.Treeview(tree_frame, columns=("ประเภท", "หมวดหมู่", "รายละเอียด", "จำนวนเงิน"),
+                        show="headings", yscrollcommand=tree_scroll.set)
+    tree_scroll.config(command=tree.yview)
+
     for col in ("ประเภท", "หมวดหมู่", "รายละเอียด", "จำนวนเงิน"):
         tree.heading(col, text=col)
-        tree.column(col, width=120)
-    tree.pack(expand=True, fill="both")
+        tree.column(col, width=140)
+    tree.pack(fill="both", expand=True)
 
     def add_entry():
         def add():
             try:
+                # ใช้ข้อความจาก entry หากเลือก "อื่นๆ"
+                category = cat_input_var.get() if cat_var.get() == "อื่นๆ (ใส่ข้อความเอง)" else cat_var.get()
+
                 data.append([
                     type_var.get(),
-                    cat_var.get(),
+                    category,
                     detail_var.get(),
                     float(amount_var.get())
                 ])
@@ -119,30 +131,72 @@ def create_report_ui():
             except:
                 messagebox.showerror("ผิดพลาด", "จำนวนเงินไม่ถูกต้อง")
 
+        CATEGORY_OPTIONS = {
+            "รายรับ": [
+                "กองทุนกรรมการ", "กองทุนการศึกษา", "งานไหว้บรรพบุรุษ (ตรุษจีน)",
+                "งานไหว้พระจันทร์", "สนับสนุนหนังสือทำเนียบ", "ค่าทำป้ายแกะสลัก",
+                "ค่าตั้งป้ายบรรพบุรุษ", "ดอกเบี้ยรับ", "รับบริจาคทั่วไป",
+                "รับบริจาคสนับสนุนโครงการ", "อื่นๆ (ใส่ข้อความเอง)"
+            ],
+            "รายจ่าย": [
+                "เงินเดือน", "ค่ารถ ค่าล่วงเวลาผจก.", "การดำเนินงานและกิจกรรม",
+                "การศึกษา และเยาวชน", "เครื่องใช้สำนักงาน และวัสดุสิ้นเปลือง",
+                "ซ่อมแซม ค่าจ้างและค่าแรง", "ค่าสาธารณูปโภค", "อื่นๆ (ใส่ข้อความเอง)"
+            ]
+        }
+
         top = tk.Toplevel(win)
         top.title("เพิ่มข้อมูล")
-        top.geometry("400x350")
+        top.geometry("420x400")
 
         form_frame = tk.Frame(top)
         form_frame.pack(pady=10, padx=20, fill="both", expand=True)
 
+        # ประเภท
         tk.Label(form_frame, text="ประเภท:", font=("TH Sarabun New", 16)).grid(row=0, column=0, sticky="w", pady=2)
         type_var = tk.StringVar(value="รายรับ")
-        type_menu = ttk.Combobox(form_frame, textvariable=type_var, values=["รายรับ", "รายจ่าย"], state="readonly", font=("TH Sarabun New", 16))
+        type_menu = ttk.Combobox(form_frame, textvariable=type_var, values=["รายรับ", "รายจ่าย"],
+                                 state="readonly", font=("TH Sarabun New", 16))
         type_menu.grid(row=0, column=1, pady=2)
 
+        # หมวดหมู่
         tk.Label(form_frame, text="หมวดหมู่:", font=("TH Sarabun New", 16)).grid(row=1, column=0, sticky="w", pady=2)
         cat_var = tk.StringVar()
-        tk.Entry(form_frame, textvariable=cat_var, width=30, font=("TH Sarabun New", 16)).grid(row=1, column=1, pady=2)
+        cat_input_var = tk.StringVar()
 
-        tk.Label(form_frame, text="รายละเอียด:", font=("TH Sarabun New", 16)).grid(row=2, column=0, sticky="w", pady=2)
+        cat_menu = ttk.Combobox(form_frame, textvariable=cat_var, state="readonly", font=("TH Sarabun New", 16))
+        cat_menu.grid(row=1, column=1, pady=2)
+
+        cat_entry = tk.Entry(form_frame, textvariable=cat_input_var, font=("TH Sarabun New", 16))
+
+        def update_categories(*args):
+            selected_type = type_var.get()
+            options = CATEGORY_OPTIONS[selected_type]
+            cat_menu['values'] = options
+            cat_var.set(options[0])
+            cat_entry.grid_remove()
+
+        def on_cat_selected(event=None):
+            if cat_var.get() == "อื่นๆ (ใส่ข้อความเอง)":
+                cat_entry.grid(row=2, column=1, pady=2)
+            else:
+                cat_entry.grid_remove()
+
+        type_var.trace("w", update_categories)
+        cat_menu.bind("<<ComboboxSelected>>", on_cat_selected)
+        update_categories()
+
+        # รายละเอียด
+        tk.Label(form_frame, text="รายละเอียด:", font=("TH Sarabun New", 16)).grid(row=3, column=0, sticky="w", pady=2)
         detail_var = tk.StringVar()
-        tk.Entry(form_frame, textvariable=detail_var, width=30, font=("TH Sarabun New", 16)).grid(row=2, column=1, pady=2)
+        tk.Entry(form_frame, textvariable=detail_var, font=("TH Sarabun New", 16)).grid(row=3, column=1, pady=2)
 
-        tk.Label(form_frame, text="จำนวนเงิน:", font=("TH Sarabun New", 16)).grid(row=3, column=0, sticky="w", pady=2)
+        # จำนวนเงิน
+        tk.Label(form_frame, text="จำนวนเงิน:", font=("TH Sarabun New", 16)).grid(row=4, column=0, sticky="w", pady=2)
         amount_var = tk.StringVar()
-        tk.Entry(form_frame, textvariable=amount_var, width=30, font=("TH Sarabun New", 16)).grid(row=3, column=1, pady=2)
+        tk.Entry(form_frame, textvariable=amount_var, font=("TH Sarabun New", 16)).grid(row=4, column=1, pady=2)
 
+        # ปุ่มเพิ่ม
         tk.Button(top, text="เพิ่ม", command=add, width=15, font=("TH Sarabun New", 16)).pack(pady=10)
 
     def refresh():
@@ -159,18 +213,22 @@ def create_report_ui():
         if not data:
             messagebox.showwarning("คำเตือน", "ไม่มีข้อมูลให้บันทึก")
             return
-        
+
         file_path = os.path.join(REPORT_DIR, name + ".csv")
         if os.path.exists(file_path):
             messagebox.showerror("ชื่อซ้ำ", f"มีรายงานชื่อ '{name}.csv' อยู่แล้ว กรุณาใช้ชื่ออื่น")
             return
-    
+
         save_to_csv(name, data)
         messagebox.showinfo("สำเร็จ", f"บันทึก {name}.csv สำเร็จแล้ว")
         win.destroy()
 
-    tk.Button(win, text="เพิ่มข้อมูล", command=add_entry, font=("TH Sarabun New", 16)).pack(pady=5)
-    tk.Button(win, text="บันทึกทั้งหมด", command=save, font=("TH Sarabun New", 16)).pack(pady=5)
+    # ปุ่มด้านล่าง
+    button_frame = tk.Frame(win)
+    button_frame.pack(pady=10)
+    tk.Button(button_frame, text="เพิ่มข้อมูล", command=add_entry, font=("TH Sarabun New", 16), width=20).pack(pady=5)
+    tk.Button(button_frame, text="บันทึกทั้งหมด", command=save, font=("TH Sarabun New", 16), width=20).pack(pady=5)
+
 
 # ==== ดูรายงานและแปลงเป็น PDF (placeholder) ====
 def view_report_ui():
