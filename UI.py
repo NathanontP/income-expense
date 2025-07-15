@@ -187,10 +187,6 @@ def view_report_ui():
             view_win.title(f"ดูรายงาน: {report_file}")
             view_win.geometry("800x400")
 
-            style = ttk.Style()
-            style.configure("Treeview", font=("TH Sarabun New", 16), rowheight=28)
-            style.configure("Treeview.Heading", font=("TH Sarabun New", 16, "bold"))
-
             tree = ttk.Treeview(view_win, columns=reader[0], show="headings")
             for col in reader[0]:
                 tree.heading(col, text=col)
@@ -199,11 +195,13 @@ def view_report_ui():
                 tree.insert('', 'end', values=row)
             tree.pack(expand=True, fill="both", padx=10, pady=10)
 
-            tk.Button(view_win, text="แปลงเป็น PDF", command=lambda: export_pdf(csv_path, report_file), font=("TH Sarabun New", 16)).pack(pady=10)
+            def export_pdf():
+                pdf_path = generate_pdf_from_csv(csv_path, report_file.replace(".csv", ""))
+                os.startfile(pdf_path)
+                view_win.destroy()
+                messagebox.showinfo("สำเร็จ", f"แปลงเป็น PDF สำเร็จแล้วบันทึกที่: {pdf_path}")
 
-    def export_pdf(csv_path, report_file):
-        pdf_path = generate_pdf_from_csv(csv_path, report_file.replace(".csv", ""))
-        messagebox.showinfo("สำเร็จ", f"แปลงเป็น PDF สำเร็จแล้วบันทึกที่: {pdf_path}")
+            tk.Button(view_win, text="แปลงเป็น PDF", command=export_pdf).pack(pady=10)
 
     selector = tk.Toplevel(root)
     selector.title("เลือกไฟล์รายงานเพื่อดู")
