@@ -82,24 +82,39 @@ def generate_pdf_from_csv(csv_path, report_title):
             y -= 10
         return y, total
 
+    # หัวข้อ
     c.setFont("THSarabun-Bold", 18)
     c.drawString(x_income, y, "รายรับ")
     c.drawString(x_expense, y, "รายจ่าย")
     y -= 25
 
+    # แสดงรายการรายรับ-รายจ่าย
     y_income, total_income = draw_section(income, x_income, y)
     y_expense, total_expense = draw_section(expense, x_expense, y)
-    y_total = min(y_income, y_expense) - 20
 
-    c.setFont("THSarabun", 16)
+    # ส่วนรวมยอด
+    y_total = min(y_income, y_expense) - 30
+    c.setFont("THSarabun-Bold", 16)
+
     c.drawString(x_income, y_total, "รวมรายรับ")
     c.drawRightString(x_income + 200, y_total, f"{total_income:,.2f}")
+
     c.drawString(x_expense, y_total, "รวมรายจ่าย")
     c.drawRightString(x_expense + 200, y_total, f"{total_expense:,.2f}")
-    y_total -= 18
+
+    # รายรับสูง/ต่ำกว่ารายจ่าย
+    y_total -= 20
     diff = total_income - total_expense
-    c.drawString(x_expense, y_total, "รายรับ สูง ต่ำ กว่ารายจ่าย")
-    c.drawRightString(x_expense + 200, y_total, f"({abs(diff):,.2f})")
+
+    if diff > 0:
+        c.drawString(x_expense, y_total, "รายรับ สูง กว่า รายจ่าย")
+        c.drawRightString(x_expense + 200, y_total, f"({abs(diff):,.2f})")
+    elif diff < 0:
+        c.drawString(x_expense, y_total, "รายรับ ต่ำ กว่า รายจ่าย")
+        c.drawRightString(x_expense + 200, y_total, f"({abs(diff):,.2f})")
+    else:
+        c.drawString(x_expense, y_total, "รายรับ เท่ากับ รายจ่าย")
+        c.drawRightString(x_expense + 200, y_total, f"{0:,.2f}")
 
     c.save()
     return pdf_path
