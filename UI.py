@@ -464,8 +464,83 @@ def edit_report_ui():
                       font=("TH Sarabun New", 16)).pack(pady=10)
 
         def add_new_entry():
-            # ... (คงเดิม ไม่เปลี่ยนส่วนนี้เพราะคุณแก้ไว้ดีแล้ว)
-            pass  # ละไว้เพื่อไม่ซ้ำซ้อน
+            top = tk.Toplevel(win)
+            top.title("เพิ่มรายการใหม่")
+            top.geometry("600x500")
+
+            form_frame = tk.Frame(top)
+            form_frame.pack(pady=10, padx=20)
+
+            tk.Label(form_frame, text="ประเภท:", font=("TH Sarabun New", 16)).grid(row=0, column=0, sticky="w")
+            type_var = tk.StringVar(value="รายรับ")
+            type_menu = ttk.Combobox(form_frame, textvariable=type_var, values=["รายรับ", "รายจ่าย"], state="readonly", font=("TH Sarabun New", 16))
+            type_menu.grid(row=0, column=1, sticky="w")
+
+            tk.Label(form_frame, text="หมวดหมู่หลัก:", font=("TH Sarabun New", 16)).grid(row=1, column=0, sticky="w")
+            cat_var = tk.StringVar()
+            cat_menu = ttk.Combobox(form_frame, textvariable=cat_var, font=("TH Sarabun New", 16), state="readonly")
+            cat_menu.grid(row=1, column=1, sticky="w")
+
+            def update_categories(*args):
+                selected = type_var.get()
+                cat_menu['values'] = CATEGORY_OPTIONS[selected]
+                cat_var.set(CATEGORY_OPTIONS[selected][0])
+            type_var.trace("w", update_categories)
+            update_categories()
+
+            use_subcat_var = tk.BooleanVar()
+            subcat_var = tk.StringVar()
+            tk.Checkbutton(form_frame, text="เพิ่มหมวดย่อย", variable=use_subcat_var,
+                           font=("TH Sarabun New", 16),
+                           command=lambda: subcat_entry.grid() if use_subcat_var.get() else subcat_entry.grid_remove()
+            ).grid(row=2, column=0, sticky="w")
+
+            subcat_entry = tk.Entry(form_frame, textvariable=subcat_var, font=("TH Sarabun New", 16))
+            subcat_entry.grid(row=2, column=1, sticky="w")
+            subcat_entry.grid_remove()
+
+            tk.Label(form_frame, text="รายละเอียดและจำนวนเงิน:", font=("TH Sarabun New", 16)).grid(row=3, column=0, sticky="w")
+            details_frame = tk.Frame(form_frame)
+            details_frame.grid(row=4, column=0, columnspan=2, pady=5, sticky="w")
+
+            detail_entries = []
+            def add_detail_row():
+                row = tk.Frame(details_frame)
+                row.pack(pady=2, anchor="w")
+                d_var = tk.StringVar()
+                a_var = tk.StringVar()
+                tk.Entry(row, textvariable=d_var, font=("TH Sarabun New", 16), width=30).pack(side="left", padx=5)
+                tk.Entry(row, textvariable=a_var, font=("TH Sarabun New", 16), width=10).pack(side="left", padx=5)
+                detail_entries.append((d_var, a_var))
+
+            add_detail_row()
+            tk.Button(form_frame, text="+ เพิ่มแถว", font=("TH Sarabun New", 14), command=add_detail_row).grid(row=5, column=0, columnspan=2)
+
+            def confirm_add():
+                valid_rows = []
+                for d_var, a_var in detail_entries:
+                    desc = d_var.get().strip()
+                    try:
+                        amt = float(a_var.get())
+                        if desc:
+                            valid_rows.append((desc, amt))
+                    except:
+                        continue
+
+                if not valid_rows:
+                    messagebox.showwarning("เตือน", "กรุณากรอกรายละเอียดและจำนวนเงิน")
+                    return
+
+                category = cat_var.get()
+                if use_subcat_var.get() and subcat_var.get().strip():
+                    category += f" > {subcat_var.get().strip()}"
+
+                for desc, amt in valid_rows:
+                    data.append([type_var.get(), category, desc, amt])
+                refresh_table()
+                top.destroy()
+
+            tk.Button(top, text="เพิ่มทั้งหมด", command=confirm_add, font=("TH Sarabun New", 16)).pack(pady=10)
 
         def save_changes_to_file():
             path = os.path.join(REPORT_DIR, report_file)
