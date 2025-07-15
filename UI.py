@@ -88,11 +88,17 @@ def create_report_ui():
     win.title("สร้างรายงานใหม่")
     win.geometry("500x450")
 
-    tk.Label(win, text="ชื่อรายงาน (ไม่ต้องใส่ .csv)").pack(pady=5)
+    tk.Label(win, text="ชื่อรายงาน (ไม่ต้องใส่ .csv)", font=("TH Sarabun New", 16)).pack(pady=5)
     name_var = tk.StringVar()
-    tk.Entry(win, textvariable=name_var).pack(pady=5)
+    tk.Entry(win, textvariable=name_var, font=("TH Sarabun New", 16)).pack(pady=5)
 
     data = []
+
+    # ปรับ Treeview ให้ฟอนต์ใหญ่
+    style = ttk.Style()
+    style.configure("Treeview", font=("TH Sarabun New", 16), rowheight=28)
+    style.configure("Treeview.Heading", font=("TH Sarabun New", 16, "bold"))
+
     tree = ttk.Treeview(win, columns=("ประเภท", "หมวดหมู่", "รายละเอียด", "จำนวนเงิน"), show="headings")
     for col in ("ประเภท", "หมวดหมู่", "รายละเอียด", "จำนวนเงิน"):
         tree.heading(col, text=col)
@@ -120,24 +126,24 @@ def create_report_ui():
         form_frame = tk.Frame(top)
         form_frame.pack(pady=10, padx=20, fill="both", expand=True)
 
-        tk.Label(form_frame, text="ประเภท:").grid(row=0, column=0, sticky="w", pady=2)
+        tk.Label(form_frame, text="ประเภท:", font=("TH Sarabun New", 16)).grid(row=0, column=0, sticky="w", pady=2)
         type_var = tk.StringVar(value="รายรับ")
-        type_menu = ttk.Combobox(form_frame, textvariable=type_var, values=["รายรับ", "รายจ่าย"], state="readonly")
+        type_menu = ttk.Combobox(form_frame, textvariable=type_var, values=["รายรับ", "รายจ่าย"], state="readonly", font=("TH Sarabun New", 16))
         type_menu.grid(row=0, column=1, pady=2)
 
-        tk.Label(form_frame, text="หมวดหมู่:").grid(row=1, column=0, sticky="w", pady=2)
+        tk.Label(form_frame, text="หมวดหมู่:", font=("TH Sarabun New", 16)).grid(row=1, column=0, sticky="w", pady=2)
         cat_var = tk.StringVar()
-        tk.Entry(form_frame, textvariable=cat_var, width=30).grid(row=1, column=1, pady=2)
+        tk.Entry(form_frame, textvariable=cat_var, width=30, font=("TH Sarabun New", 16)).grid(row=1, column=1, pady=2)
 
-        tk.Label(form_frame, text="รายละเอียด:").grid(row=2, column=0, sticky="w", pady=2)
+        tk.Label(form_frame, text="รายละเอียด:", font=("TH Sarabun New", 16)).grid(row=2, column=0, sticky="w", pady=2)
         detail_var = tk.StringVar()
-        tk.Entry(form_frame, textvariable=detail_var, width=30).grid(row=2, column=1, pady=2)
+        tk.Entry(form_frame, textvariable=detail_var, width=30, font=("TH Sarabun New", 16)).grid(row=2, column=1, pady=2)
 
-        tk.Label(form_frame, text="จำนวนเงิน:").grid(row=3, column=0, sticky="w", pady=2)
+        tk.Label(form_frame, text="จำนวนเงิน:", font=("TH Sarabun New", 16)).grid(row=3, column=0, sticky="w", pady=2)
         amount_var = tk.StringVar()
-        tk.Entry(form_frame, textvariable=amount_var, width=30).grid(row=3, column=1, pady=2)
+        tk.Entry(form_frame, textvariable=amount_var, width=30, font=("TH Sarabun New", 16)).grid(row=3, column=1, pady=2)
 
-        tk.Button(top, text="เพิ่ม", command=add, width=15).pack(pady=10)
+        tk.Button(top, text="เพิ่ม", command=add, width=15, font=("TH Sarabun New", 16)).pack(pady=10)
 
     def refresh():
         for i in tree.get_children():
@@ -154,7 +160,6 @@ def create_report_ui():
             messagebox.showwarning("คำเตือน", "ไม่มีข้อมูลให้บันทึก")
             return
         
-        #ตรวจสอบว่ามีไฟล์ชื่อซ้ำหรือไม่
         file_path = os.path.join(REPORT_DIR, name + ".csv")
         if os.path.exists(file_path):
             messagebox.showerror("ชื่อซ้ำ", f"มีรายงานชื่อ '{name}.csv' อยู่แล้ว กรุณาใช้ชื่ออื่น")
@@ -164,8 +169,8 @@ def create_report_ui():
         messagebox.showinfo("สำเร็จ", f"บันทึก {name}.csv สำเร็จแล้ว")
         win.destroy()
 
-    tk.Button(win, text="เพิ่มข้อมูล", command=add_entry).pack(pady=5)
-    tk.Button(win, text="บันทึกทั้งหมด", command=save).pack(pady=5)
+    tk.Button(win, text="เพิ่มข้อมูล", command=add_entry, font=("TH Sarabun New", 16)).pack(pady=5)
+    tk.Button(win, text="บันทึกทั้งหมด", command=save, font=("TH Sarabun New", 16)).pack(pady=5)
 
 # ==== ดูรายงานและแปลงเป็น PDF (placeholder) ====
 def view_report_ui():
@@ -377,11 +382,12 @@ def edit_report_ui():
 
 # ===== เมนูหลัก =====
 def main_menu():
-    tk.Label(root, text="ระบบจัดการรายงานรายรับรายจ่าย", font=("TH Sarabun New", 20)).pack(pady=20)
-    tk.Button(root, text="1) สร้างรายงานใหม่", width=30, height=2, command=create_report_ui).pack(pady=5)
-    tk.Button(root, text="2) ดูรายงาน และแปลงเป็น PDF", width=30, height=2, command=view_report_ui).pack(pady=5)
-    tk.Button(root, text="3) แก้ไข/ลบ รายการ", width=30, height=2, command=edit_report_ui).pack(pady=5)
-    tk.Button(root, text="4) ออกจากโปรแกรม", width=30, height=2, command=root.quit).pack(pady=20)
+    tk.Label(root, text="ระบบจัดการรายงานรายรับรายจ่าย", font=("TH Sarabun New", 20, "bold")).pack(pady=20)
+    tk.Button(root, text="1) สร้างรายงานใหม่", font=("TH Sarabun New", 14, "bold"), width=35, height=2, command=create_report_ui).pack(pady=5)
+    tk.Button(root, text="2) ดูรายงาน และแปลงเป็น PDF", font=("TH Sarabun New", 14, "bold"), width=35, height=2, command=view_report_ui).pack(pady=5)
+    tk.Button(root, text="3) แก้ไข/ลบ รายการ", font=("TH Sarabun New", 14, "bold"), width=35, height=2, command=edit_report_ui).pack(pady=5)
+    tk.Button(root, text="4) ออกจากโปรแกรม", font=("TH Sarabun New", 14, "bold"), width=35, height=2, command=root.quit).pack(pady=20)
+
 
 main_menu()
 root.mainloop()
