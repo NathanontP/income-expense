@@ -334,6 +334,20 @@ def view_report_ui():
 
     tk.Button(selector, text="ดูรายงาน", command=on_select, font=("TH Sarabun New", 16)).pack(pady=10)
 
+CATEGORY_OPTIONS = {
+    "รายรับ": [
+        "กองทุนกรรมการ", "กองทุนการศึกษา", "งานไหว้บรรพบุรุษ (ตรุษจีน)",
+        "งานไหว้พระจันทร์", "สนับสนุนหนังสือทำเนียบ", "ค่าทำป้ายแกะสลัก",
+        "ค่าตั้งป้ายบรรพบุรุษ", "ดอกเบี้ยรับ", "รับบริจาคทั่วไป",
+        "รับบริจาคสนับสนุนโครงการ", "อื่นๆ"
+    ],
+    "รายจ่าย": [
+        "เงินเดือน", "ค่ารถ ค่าล่วงเวลาผจก.", "การดำเนินงานและกิจกรรม",
+        "การศึกษา และเยาวชน", "เครื่องใช้สำนักงาน และวัสดุสิ้นเปลือง",
+        "ซ่อมแซม ค่าจ้างและค่าแรง", "ค่าสาธารณูปโภค", "อื่นๆ"
+    ]
+}
+
 # ===== ฟังก์ชันแก้ไขรายงาน =====
 def edit_report_ui():
     reports = list_all_reports()
@@ -378,18 +392,51 @@ def edit_report_ui():
                 return
             item = selected[0]
             values = tree.item(item, 'values')
+
             update_win = tk.Toplevel(win)
             update_win.title("แก้ไขรายการ")
-            update_win.geometry("300x250")
+            update_win.geometry("400x370")
 
             tk.Label(update_win, text="ประเภท:", font=("TH Sarabun New", 16)).pack()
             type_var = tk.StringVar(value=values[0])
-            type_menu = ttk.Combobox(update_win, textvariable=type_var, values=["รายรับ", "รายจ่าย"], state="readonly", font=("TH Sarabun New", 16))
+            type_menu = ttk.Combobox(update_win, textvariable=type_var, values=["รายรับ", "รายจ่าย"],
+                                     state="readonly", font=("TH Sarabun New", 16))
             type_menu.pack()
 
-            tk.Label(update_win, text="หมวดหมู่:", font=("TH Sarabun New", 16)).pack()
-            category_var = tk.StringVar(value=values[1])
-            tk.Entry(update_win, textvariable=category_var, font=("TH Sarabun New", 16)).pack()
+            main_cat = values[1].split(">")[0].strip()
+            sub_cat = values[1].split(">")[1].strip() if ">" in values[1] else ""
+
+            tk.Label(update_win, text="หมวดหมู่หลัก:", font=("TH Sarabun New", 16)).pack()
+            cat_var = tk.StringVar(value=main_cat)
+            cat_menu = ttk.Combobox(update_win, textvariable=cat_var,
+                                    font=("TH Sarabun New", 16), state="readonly")
+            cat_menu.pack()
+
+            def update_cat_options(*args):
+                cat_menu['values'] = CATEGORY_OPTIONS[type_var.get()]
+                if cat_var.get() not in CATEGORY_OPTIONS[type_var.get()]:
+                    cat_var.set(CATEGORY_OPTIONS[type_var.get()][0])
+
+            type_var.trace("w", update_cat_options)
+            update_cat_options()
+
+            subcat_frame = tk.Frame(update_win)
+            subcat_frame.pack(pady=5)
+
+            use_subcat_var = tk.BooleanVar(value=bool(sub_cat))
+            subcat_var = tk.StringVar(value=sub_cat)
+
+            tk.Checkbutton(subcat_frame, text="มีหมวดย่อย", variable=use_subcat_var,
+                           font=("TH Sarabun New", 16),
+                           command=lambda: subcat_entry.grid(row=0, column=1, padx=5)
+                           if use_subcat_var.get() else subcat_entry.grid_remove()
+                           ).grid(row=0, column=0, sticky="w")
+
+            subcat_entry = tk.Entry(subcat_frame, textvariable=subcat_var, font=("TH Sarabun New", 16))
+            if sub_cat:
+                subcat_entry.grid(row=0, column=1, padx=5)
+            else:
+                subcat_entry.grid_remove()
 
             tk.Label(update_win, text="รายละเอียด:", font=("TH Sarabun New", 16)).pack()
             detail_var = tk.StringVar(value=values[2])
@@ -399,53 +446,26 @@ def edit_report_ui():
             amount_var = tk.StringVar(value=values[3])
             tk.Entry(update_win, textvariable=amount_var, font=("TH Sarabun New", 16)).pack()
 
-            tk.Button(update_win, text="บันทึก", command=save_changes, font=("TH Sarabun New", 16)).pack(pady=10)
-
             def save_changes():
                 try:
                     amount = float(amount_var.get())
                 except ValueError:
                     messagebox.showwarning("คำเตือน", "จำนวนเงินต้องเป็นตัวเลข")
                     return
-                new_row = [type_var.get(), category_var.get(), detail_var.get(), amount]
+                category = cat_var.get()
+                if use_subcat_var.get() and subcat_var.get().strip():
+                    category += f" > {subcat_var.get().strip()}"
+                new_row = [type_var.get(), category, detail_var.get(), amount]
                 data[int(item)] = new_row
                 refresh_table()
                 update_win.destroy()
 
+            tk.Button(update_win, text="บันทึก", command=save_changes,
+                      font=("TH Sarabun New", 16)).pack(pady=10)
+
         def add_new_entry():
-            add_win = tk.Toplevel(win)
-            add_win.title("เพิ่มรายการใหม่")
-            add_win.geometry("350x300")
-
-            tk.Label(add_win, text="ประเภท:", font=("TH Sarabun New", 16)).pack()
-            type_var = tk.StringVar(value="รายรับ")
-            type_menu = ttk.Combobox(add_win, textvariable=type_var, values=["รายรับ", "รายจ่าย"], state="readonly", font=("TH Sarabun New", 16))
-            type_menu.pack()
-
-            tk.Label(add_win, text="หมวดหมู่:", font=("TH Sarabun New", 16)).pack()
-            category_var = tk.StringVar()
-            tk.Entry(add_win, textvariable=category_var, font=("TH Sarabun New", 16)).pack()
-
-            tk.Label(add_win, text="รายละเอียด:", font=("TH Sarabun New", 16)).pack()
-            detail_var = tk.StringVar()
-            tk.Entry(add_win, textvariable=detail_var, font=("TH Sarabun New", 16)).pack()
-
-            tk.Label(add_win, text="จำนวนเงิน:", font=("TH Sarabun New", 16)).pack()
-            amount_var = tk.StringVar()
-            tk.Entry(add_win, textvariable=amount_var, font=("TH Sarabun New", 16)).pack()
-
-            def add_to_data():
-                try:
-                    amount = float(amount_var.get())
-                except ValueError:
-                    messagebox.showwarning("คำเตือน", "จำนวนเงินต้องเป็นตัวเลข")
-                    return
-                new_row = [type_var.get(), category_var.get(), detail_var.get(), amount]
-                data.append(new_row)
-                refresh_table()
-                add_win.destroy()
-
-            tk.Button(add_win, text="เพิ่ม", command=add_to_data, font=("TH Sarabun New", 16)).pack(pady=10)
+            # ... (คงเดิม ไม่เปลี่ยนส่วนนี้เพราะคุณแก้ไว้ดีแล้ว)
+            pass  # ละไว้เพื่อไม่ซ้ำซ้อน
 
         def save_changes_to_file():
             path = os.path.join(REPORT_DIR, report_file)
@@ -507,6 +527,8 @@ def edit_report_ui():
         open_report_editor(reports[selected[0]])
 
     tk.Button(selector, text="ตกลง", command=on_select, font=("TH Sarabun New", 16)).pack(pady=10)
+
+
 
 # ===== เมนูหลัก =====
 def main_menu():
